@@ -335,11 +335,20 @@
         let allJobs = [];
         let authData = [];
         let selectedEngineer = '';
+        let selectedDate = '';
         let currentJobCard = null;
 
         async function init() {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('dateFilter').value = today;
+            const today = new Date();
+            const todayString = today.toISOString().split('T')[0];
+            document.getElementById('dateFilter').value = todayString;
+            
+            // Set selected date to today for initial load
+            selectedDate = {
+                day: today.getDate(),
+                month: today.getMonth() + 1,
+                year: today.getFullYear()
+            };
 
             try {
                 // Fetch the list of users and passwords first
@@ -388,9 +397,66 @@
 
         async function loadJobs() {
             try {
-                // Now fetch the actual job data
                 const response = await fetch(`${API_URL}?action=getJobs`);
-                allJobs = await response.json();
+                const rawJobs = await response.json();
+                
+                console.log('Raw response:', rawJobs);
+                console.log('Number of jobs received:', rawJobs.length);
+                
+                if (rawJobs.length > 0) {
+                    console.log('First job data:', rawJobs[0]);
+                    console.log('Available columns:', Object.keys(rawJobs[0]));
+                }
+                
+                // Process jobs to handle the new date format
+                allJobs = rawJobs.map((job, index) => {
+                    // Try different possible column names for day, month, year
+                    const possibleDayColumns = ['Day', 'day', 'D', 'd'];
+                    const possibleMonthColumns = ['Month', 'month', 'M', 'm'];
+                    const possibleYearColumns = ['Year', 'year', 'Y', 'y'];
+                    
+                    let day = 0, month = 0, year = 0;
+                    
+                    // Find day value
+                    for (const col of possibleDayColumns) {
+                        if (job[col] !== undefined && job[col] !== null && job[col] !== '') {
+                            day = parseInt(job[col]);
+                            if (!isNaN(day)) break;
+                        }
+                    }
+                    
+                    // Find month value
+                    for (const col of possibleMonthColumns) {
+                        if (job[col] !== undefined && job[col] !== null && job[col] !== '') {
+                            month = parseInt(job[col]);
+                            if (!isNaN(month)) break;
+                        }
+                    }
+                    
+                    // Find year value
+                    for (const col of possibleYearColumns) {
+                        if (job[col] !== undefined && job[col] !== null && job[col] !== '') {
+                            year = parseInt(job[col]);
+                            if (!isNaN(year)) break;
+                        }
+                    }
+                    
+                    // Log the first few jobs to see what we're getting
+                    if (index < 3) {
+                        console.log(`Job ${index + 1} date components:`, { day, month, year });
+                    }
+                    
+                    return {
+                        ...job,
+                        dateComponents: { day, month, year },
+                        // Create a display date string
+                        displayDate: day && month && year ? `${day}/${month}/${year}` : 'No date'
+                    };
+                });
+                
+                console.log('Processed jobs:', allJobs.length);
+                console.log('Sample processed job:', allJobs[0]);
+                
                 displayJobsForEngineer();
             } catch (error) {
                 console.error('Error loading jobs:', error);
@@ -399,16 +465,45 @@
         }
 
         function handleDateChange(e) {
+            const dateValue = e.target.value;
+            if (dateValue) {
+                const date = new Date(dateValue);
+                selectedDate = {
+                    day: date.getDate(),
+                    month: date.getMonth() + 1,
+                    year: date.getFullYear()
+                };
+            } else {
+                selectedDate = '';
+            }
             displayJobsForEngineer();
         }
 
         function displayJobsForEngineer() {
             const jobsContainer = document.getElementById('jobsContainer');
-            const selectedDateString = new Date(document.getElementById('dateFilter').value).toLocaleDateString('en-GB');
-
-            const filteredJobs = allJobs.filter(job => 
-                job.Engineer === selectedEngineer && job.Date === selectedDateString
-            );
+            
+            console.log('Filtering jobs for engineer:', selectedEngineer);
+            console.log('Selected date:', selectedDate);
+            
+            const filteredJobs = allJobs.filter(job => {
+                const jobDate = job.dateComponents;
+                const jobEngineer = job.Engineer;
+                
+                // Engineer matching
+                const engineerMatch = jobEngineer === selectedEngineer;
+                
+                // Date matching - compare day, month, year separately
+                let dateMatch = true;
+                if (selectedDate && selectedDate.day && selectedDate.month && selectedDate.year) {
+                    dateMatch = jobDate.day === selectedDate.day && 
+                               jobDate.month === selectedDate.month && 
+                               jobDate.year === selectedDate.year;
+                }
+                
+                return engineerMatch && dateMatch;
+            });
+            
+            console.log('Filtered jobs count:', filteredJobs.length);
             
             if (filteredJobs.length === 0) {
                 jobsContainer.innerHTML = '<div class="no-jobs">No jobs scheduled for this date.</div>';
@@ -466,6 +561,7 @@
                         <div class="job-detail"><strong>Address:</strong> ${job.Address || 'N/A'}</div>
                         <div class="job-detail"><strong>Postcode:</strong> ${job['Job Details : Postcode'] || 'N/A'}</div>
                         <div class="job-detail"><strong>Time:</strong> ${job.Time || 'N/A'}</div>
+                        <div class="job-detail"><strong>Date:</strong> ${job.displayDate}</div>
                     </div>
                 </div>
             `;
