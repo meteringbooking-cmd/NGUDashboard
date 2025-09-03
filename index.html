@@ -612,6 +612,96 @@
             }
         }
 
+        function showCommentModal(status) {
+            const modal = document.getElementById('commentModal');
+            const title = document.getElementById('commentModalTitle');
+            const textarea = document.getElementById('commentTextarea');
+            
+            title.textContent = `Please provide a reason for ${status.toLowerCase()}:`;
+            textarea.value = '';
+            textarea.focus();
+            
+            pendingStatusUpdate = status;
+            modal.style.display = 'block';
+        }
+
+        function closeCommentModal() {
+            const modal = document.getElementById('commentModal');
+            modal.style.display = 'none';
+            pendingStatusUpdate = null;
+        }
+
+        async function submitWithComment() {
+            const comment = document.getElementById('commentTextarea').value.trim();
+            
+            if (!comment) {
+                alert('Please provide a reason before submitting.');
+                return;
+            }
+
+            if (!currentJobCard || !pendingStatusUpdate) return;
+            
+            const jobRef = currentJobCard.dataset.ref;
+            closeCommentModal();
+
+            try {
+                console.log(`Updating job ${jobRef} to status: ${pendingStatusUpdate} with comment: ${comment}`);
+                
+                const payload = {
+                    action: "updateJob",
+                    data: {
+                        Ref: jobRef,
+                        Status: pendingStatusUpdate,
+                        Comments: comment
+                    }
+                };
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    const job = allJobs.find(j => j.Ref == jobRef);
+                    if (job) {
+                        job.Status = pendingStatusUpdate;
+                        job.Comments = comment;
+                    }
+                    
+                    const statusClass = pendingStatusUpdate.toLowerCase().replace(' ', '-');
+                    currentJobCard.className = 'job-card ' + statusClass;
+                    currentJobCard.querySelector('.job-status').textContent = pendingStatusUpdate;
+                    currentJobCard.querySelector('.job-status').className = 'job-status ' + statusClass;
+
+                    console.log('Job updated successfully with comment');
+                } else {
+                    throw new Error(result.message || 'Unknown error occurred');
+                }
+            } catch (error) {
+                console.error('Error updating job status:', error);
+                alert(`Failed to update job status: ${error.message}. Please check the console for details.`);
+            } finally {
+                pendingStatusUpdate = null;
+            }
+        }
+
+        // Close modal when clicking outside of it
+        window.onclick = function(event) {
+            const modal = document.getElementById('commentModal');
+            if (event.target === modal) {
+                closeCommentModal();
+            }
+        }
+
         window.addEventListener('load', init);
     </script>
 </body>
