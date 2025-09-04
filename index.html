@@ -288,7 +288,114 @@
             color: #636e72;
             font-style: italic;
             text-align: center;
-         }
+        }
+
+        /* --- Reason Popup Modal --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            visibility: hidden;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.show {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            transform: scale(0.8);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.show .modal {
+            transform: scale(1);
+        }
+
+        .modal h2 {
+            color: #2d3436;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+        }
+
+        .modal p {
+            color: #636e72;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .modal textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 12px;
+            border: 2px solid #e0e6ed;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+            margin-bottom: 20px;
+        }
+
+        .modal textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .modal-button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .modal-button.cancel {
+            background: #ddd;
+            color: #333;
+        }
+
+        .modal-button.cancel:hover {
+            background: #ccc;
+        }
+
+        .modal-button.submit {
+            background: #667eea;
+            color: white;
+        }
+
+        .modal-button.submit:hover {
+            background: #5a66e4;
+        }
+
+        .modal-button.submit.danger {
+            background: #e84393;
+        }
+
+        .modal-button.submit.danger:hover {
+            background: #d63384;
+        }
     </style>
 </head>
 <body>
@@ -320,12 +427,26 @@
         </div>
     </div>
 
+    <!-- Status Menu -->
     <div id="statusMenu" class="status-menu">
         <div class="status-option" data-status="On Route">🚗 On Route</div>
         <div class="status-option" data-status="In Progress">🔧 In Progress</div>
         <div class="status-option" data-status="Completed">✅ Completed</div>
         <div class="status-option" data-status="Cancelled">❌ Cancelled</div>
         <div class="status-option" data-status="Aborted">⚠️ Aborted</div>
+    </div>
+
+    <!-- Reason Modal -->
+    <div id="reasonModal" class="modal-overlay">
+        <div class="modal">
+            <h2 id="modalTitle">Reason Required</h2>
+            <p id="modalDescription">Please provide a reason for this status change:</p>
+            <textarea id="reasonText" placeholder="Enter reason here..." maxlength="500"></textarea>
+            <div class="modal-buttons">
+                <button class="modal-button cancel" onclick="closeReasonModal()">Cancel</button>
+                <button class="modal-button submit" id="submitReason" onclick="submitWithReason()">Submit</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -336,6 +457,7 @@
         let authData = [];
         let selectedEngineer = '';
         let currentJobCard = null;
+        let pendingStatusUpdate = null; // Store pending status update details
 
         async function init() {
             const today = new Date().toISOString().split('T')[0];
@@ -362,6 +484,20 @@
                 const statusMenu = document.getElementById('statusMenu');
                 if (!statusMenu.contains(e.target) && !e.target.closest('.job-card')) {
                     statusMenu.style.display = 'none';
+                }
+            });
+
+            // Close modal when clicking on overlay
+            document.getElementById('reasonModal').addEventListener('click', (e) => {
+                if (e.target === document.getElementById('reasonModal')) {
+                    closeReasonModal();
+                }
+            });
+
+            // Handle Enter key in textarea
+            document.getElementById('reasonText').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && e.ctrlKey) {
+                    submitWithReason();
                 }
             });
         }
@@ -555,25 +691,94 @@
             statusMenu.style.top = (rect.bottom + 5) + 'px';
             
             statusMenu.querySelectorAll('.status-option').forEach(option => {
-                option.onclick = () => updateJobStatus(option.dataset.status);
+                option.onclick = () => handleStatusSelection(option.dataset.status);
             });
         }
 
-        async function updateJobStatus(newStatus) {
-            if (!currentJobCard) return;
-            
-            const jobRef = currentJobCard.dataset.ref;
+        function handleStatusSelection(newStatus) {
             const statusMenu = document.getElementById('statusMenu');
             statusMenu.style.display = 'none';
 
+            // Check if the status requires a reason
+            if (newStatus === 'Cancelled' || newStatus === 'Aborted') {
+                showReasonModal(newStatus);
+            } else {
+                updateJobStatus(newStatus);
+            }
+        }
+
+        function showReasonModal(status) {
+            const modal = document.getElementById('reasonModal');
+            const title = document.getElementById('modalTitle');
+            const description = document.getElementById('modalDescription');
+            const submitButton = document.getElementById('submitReason');
+            const reasonText = document.getElementById('reasonText');
+
+            // Set modal content based on status
+            if (status === 'Cancelled') {
+                title.textContent = 'Job Cancelled - Reason Required';
+                description.textContent = 'Please provide a reason for cancelling this job:';
+                submitButton.textContent = 'Cancel Job';
+                submitButton.className = 'modal-button submit';
+            } else if (status === 'Aborted') {
+                title.textContent = 'Job Aborted - Reason Required';
+                description.textContent = 'Please provide a reason for aborting this job:';
+                submitButton.textContent = 'Abort Job';
+                submitButton.className = 'modal-button submit danger';
+            }
+
+            // Store the pending status update
+            pendingStatusUpdate = {
+                status: status,
+                jobRef: currentJobCard.dataset.ref
+            };
+
+            // Clear previous text and show modal
+            reasonText.value = '';
+            modal.classList.add('show');
+            
+            // Focus on textarea after animation completes
+            setTimeout(() => {
+                reasonText.focus();
+            }, 300);
+        }
+
+        function closeReasonModal() {
+            const modal = document.getElementById('reasonModal');
+            modal.classList.remove('show');
+            pendingStatusUpdate = null;
+        }
+
+        function submitWithReason() {
+            const reasonText = document.getElementById('reasonText');
+            const reason = reasonText.value.trim();
+
+            if (!reason) {
+                alert('Please provide a reason before submitting.');
+                reasonText.focus();
+                return;
+            }
+
+            if (pendingStatusUpdate) {
+                updateJobStatus(pendingStatusUpdate.status, reason);
+                closeReasonModal();
+            }
+        }
+
+        async function updateJobStatus(newStatus, reason = null) {
+            if (!currentJobCard) return;
+            
+            const jobRef = currentJobCard.dataset.ref;
+
             try {
-                console.log(`Updating job ${jobRef} to status: ${newStatus}`);
+                console.log(`Updating job ${jobRef} to status: ${newStatus}${reason ? ' with reason: ' + reason : ''}`);
                 
                 const payload = {
                     action: "updateJob",
                     data: {
                         Ref: jobRef,
-                        Status: newStatus
+                        Status: newStatus,
+                        Reason: reason || '' // Include reason if provided
                     }
                 };
 
@@ -595,6 +800,9 @@
                     const job = allJobs.find(j => j.Ref == jobRef);
                     if (job) {
                         job.Status = newStatus;
+                        if (reason) {
+                            job.Reason = reason; // Store reason in job object if needed
+                        }
                     }
                     
                     const statusClass = newStatus.toLowerCase().replace(' ', '-');
