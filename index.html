@@ -696,11 +696,13 @@
         }
 
         function handleStatusSelection(newStatus) {
+            console.log('Status selected:', newStatus); // Debug log
             const statusMenu = document.getElementById('statusMenu');
             statusMenu.style.display = 'none';
 
             // Check if the status requires a reason
             if (newStatus === 'Cancelled' || newStatus === 'Aborted') {
+                console.log('Showing reason modal for:', newStatus); // Debug log
                 showReasonModal(newStatus);
             } else {
                 updateJobStatus(newStatus);
