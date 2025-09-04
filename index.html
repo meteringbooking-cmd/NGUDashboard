@@ -451,7 +451,7 @@
 
     <script>
         // REPLACE THIS WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
-        const API_URL = 'https://script.google.com/macros/s/AKfycbzPtMbCNHJ5OwHT2KbWrQbVFtmw199-Dw09oiYvvFrTfe-ZR8dGnbwn6PnxLsJEyy52/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbyMSAcn2r9UOeJ_TmiU3Oz0QCXxBtFX5dy29gZxqWdLsUVWwRSN4zT4T_ootEvjBZWj/exec';
 
         let allJobs = [];
         let authData = [];
@@ -784,6 +784,8 @@
                     }
                 };
 
+                console.log('Payload being sent:', JSON.stringify(payload, null, 2));
+
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: {
@@ -797,6 +799,7 @@
                 }
                 
                 const result = await response.json();
+                console.log('Server response:', result);
                 
                 if (result.success) {
                     const job = allJobs.find(j => j.Ref == jobRef);
@@ -813,6 +816,9 @@
                     currentJobCard.querySelector('.job-status').className = 'job-status ' + statusClass;
 
                     console.log('Job updated successfully');
+                    if (reason) {
+                        alert(`Job ${jobRef} updated to ${newStatus} with reason: "${reason}"`);
+                    }
                 } else {
                     throw new Error(result.message || 'Unknown error occurred');
                 }
@@ -826,4 +832,3 @@
     </script>
 </body>
 </html>
-
