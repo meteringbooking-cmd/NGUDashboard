@@ -451,7 +451,7 @@
 
     <script>
         // REPLACE THIS WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
-        const API_URL = 'https://script.google.com/macros/s/AKfycbxvYMGXweYk5VS_OoP7gtL1u25SauYL24PNm3tjT1nQV83Izb45UlDLIi9DOeqh3nh4/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbx5B8YpnedDgMO_q26C8c99MfLS6Xq2zNEIgNEiuJKhKsFmuLjTyTxXgWzhyi0C8KQ/exec';
 
         let allJobs = [];
         let authData = [];
@@ -633,22 +633,18 @@
             const customerPhone = jobCard.dataset.phone;
             const jobRef = jobCard.dataset.ref;
             
-            // Get engineer's actual phone number from auth data
-            const engineerData = authData.find(u => u.Engineer === selectedEngineer);
-            const engineerPhone = engineerData?.Phone; // You need to add a 'Phone' column to your auth sheet
+            // Use the selectedEngineer (username) not a phone number
+            const engineerName = selectedEngineer; // This should be the engineer's username from login
             
-            if (!engineerPhone) {
-                alert('Engineer phone number not found. Please contact administrator.');
-                console.error('Engineer phone number missing for:', selectedEngineer);
-                return;
-            }
+            console.log('Engineer name for phone lookup:', engineerName);
+            console.log('Customer phone:', customerPhone);
 
             if (!customerPhone || customerPhone === 'N/A') {
                 alert('Customer phone number is not available.');
                 return;
             }
             
-            console.log(`Initiating masked call for Job #${jobRef} from engineer ${engineerPhone} to customer at ${customerPhone}`);
+            console.log(`Initiating masked call for Job #${jobRef} from engineer ${engineerName} to customer at ${customerPhone}`);
 
             // Show calling state
             button.textContent = 'Calling...';
@@ -659,9 +655,8 @@
                     action: "maskedCall",
                     data: {
                         customerPhone: customerPhone,
-                        engineerPhone: engineerPhone,
-                        jobRef: jobRef,
-                        engineerName: selectedEngineer
+                        engineerName: engineerName, // Send engineer name, not phone
+                        jobRef: jobRef
                     }
                 };
                 
@@ -852,6 +847,7 @@
     </script>
 </body>
 </html>
+
 
 
 
