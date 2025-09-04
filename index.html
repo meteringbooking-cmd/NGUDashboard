@@ -632,7 +632,16 @@
             const jobCard = button.closest('.job-card');
             const customerPhone = jobCard.dataset.phone;
             const jobRef = jobCard.dataset.ref;
-            const engineerPhone = selectedEngineer; // This will likely be the engineer's username from login, you may need a lookup table in your Google Sheet to get the actual phone number.
+            
+            // Get engineer's actual phone number from auth data
+            const engineerData = authData.find(u => u.Engineer === selectedEngineer);
+            const engineerPhone = engineerData?.Phone; // You need to add a 'Phone' column to your auth sheet
+            
+            if (!engineerPhone) {
+                alert('Engineer phone number not found. Please contact administrator.');
+                console.error('Engineer phone number missing for:', selectedEngineer);
+                return;
+            }
 
             if (!customerPhone || customerPhone === 'N/A') {
                 alert('Customer phone number is not available.');
@@ -641,7 +650,7 @@
             
             console.log(`Initiating masked call for Job #${jobRef} from engineer ${engineerPhone} to customer at ${customerPhone}`);
 
-            // A placeholder to show a "calling" state
+            // Show calling state
             button.textContent = 'Calling...';
             button.disabled = true;
 
@@ -650,11 +659,14 @@
                     action: "maskedCall",
                     data: {
                         customerPhone: customerPhone,
-                        engineerPhone: engineerPhone
+                        engineerPhone: engineerPhone,
+                        jobRef: jobRef,
+                        engineerName: selectedEngineer
                     }
                 };
                 
-                // You will need to update your Google Apps Script to handle this request
+                console.log('Sending masked call request:', payload);
+                
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: {
@@ -663,16 +675,21 @@
                     body: JSON.stringify(payload)
                 });
                 
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
                 const result = await response.json();
+                console.log('Masked call response:', result);
 
                 if (result.success) {
-                    alert('Call initiated successfully. Your engineer will receive a call from a Twilio number shortly, connecting them to the customer.');
+                    alert(`Call initiated successfully! You should receive a call from ${result.twilioNumber || 'a Twilio number'} shortly. Answer it to be connected to the customer.`);
                 } else {
-                    alert(`Failed to initiate call: ${result.message}`);
+                    throw new Error(result.message || 'Unknown error occurred');
                 }
             } catch (error) {
                 console.error('Error initiating masked call:', error);
-                alert('An error occurred. Please check the console for details.');
+                alert(`Failed to initiate call: ${error.message}`);
             } finally {
                 button.textContent = 'Masked Call';
                 button.disabled = false;
@@ -835,4 +852,5 @@
     </script>
 </body>
 </html>
+
 
