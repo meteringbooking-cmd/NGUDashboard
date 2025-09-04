@@ -451,7 +451,7 @@
 
     <script>
         // REPLACE THIS WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
-        const API_URL = 'https://script.google.com/macros/s/AKfycbwyQn0aLYgaRpzYpLmlxHrEW38vyD3fBcrpdih3gCx3pWBjywFX_zBgea8MFZsWHuxK/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbwXtq_tSHe9uzP_XEoogoUQ84BbzJBaZOIZnVPsOy1-wGu6ZXUe-U-hIJsDaqJMUUFq/exec';
 
         let allJobs = [];
         let authData = [];
@@ -548,8 +548,11 @@
             const selectedYear = selectedDate.getFullYear();
 
             console.log('Filtering for:', { selectedDay, selectedMonth, selectedYear });
+            console.log('Selected engineer:', selectedEngineer);
+            console.log('Total jobs available:', allJobs.length);
 
             const filteredJobs = allJobs.filter(job => {
+                console.log(`Checking job ${job.Ref}: Engineer="${job.Engineer}" vs "${selectedEngineer}"`);
                 if (job.Engineer !== selectedEngineer) return false;
                 
                 // Parse the separate day, month, year columns
@@ -832,4 +835,3 @@
     </script>
 </body>
 </html>
-
