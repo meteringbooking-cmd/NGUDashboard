@@ -228,6 +228,11 @@
             background: #009a7b;
         }
 
+        .masked-call-button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+
         .jobs-area h2 {
             margin-top: 20px;
             margin-bottom: 10px;
@@ -639,7 +644,7 @@
             console.log('Engineer name for phone lookup:', engineerName);
             console.log('Customer phone:', customerPhone);
 
-            if (!customerPhone || customerPhone === 'N/A') {
+            if (!customerPhone || customerPhone === 'N/A' || customerPhone === '') {
                 alert('Customer phone number is not available.');
                 return;
             }
@@ -655,7 +660,7 @@
                     action: "maskedCall",
                     data: {
                         customerPhone: customerPhone,
-                        engineerName: engineerName, // Send engineer name, not phone
+                        engineerName: engineerName, // Send engineer name for lookup
                         jobRef: jobRef
                     }
                 };
@@ -847,7 +852,3 @@
     </script>
 </body>
 </html>
-
-
-
-
