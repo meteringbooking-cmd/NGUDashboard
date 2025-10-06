@@ -671,6 +671,8 @@
 
         function createTravelInfo(job) {
             const distance = job.Distance || job.distance || '';
+            function createTravelInfo(job) {
+            const distance = job.Distance || job.distance || '';
             let time = job['Travel Time'] || job['travel time'] || '';
             
             // Extract just the time portion if it's in ISO format
@@ -978,4 +980,5 @@
     </script>
 </body>
 </html>
+
 
