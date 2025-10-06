@@ -671,7 +671,24 @@
 
         function createTravelInfo(job) {
             const distance = job.Distance || job.distance || '';
-            const time = job['Travel Time'] || job['travel time'] || '';
+            let time = job['Travel Time'] || job['travel time'] || '';
+            
+            // Extract just the time portion if it's in ISO format
+            if (time && time.includes('T')) {
+                const timePart = time.split('T')[1];
+                if (timePart) {
+                    // Parse HH:MM:SS.sss and format nicely
+                    const timeComponents = timePart.split(':');
+                    const hours = parseInt(timeComponents[0]);
+                    const minutes = parseInt(timeComponents[1]);
+                    
+                    if (hours > 0) {
+                        time = `${hours}h ${minutes}m`;
+                    } else {
+                        time = `${minutes}m`;
+                    }
+                }
+            }
             
             if (!distance && !time) {
                 return ''; // Don't show travel info if no data
@@ -961,3 +978,4 @@
     </script>
 </body>
 </html>
+
