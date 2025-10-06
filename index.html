@@ -319,6 +319,30 @@
             text-align: center;
         }
 
+        .travel-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            padding: 12px 20px;
+            margin: 10px 0;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            font-size: 0.9em;
+        }
+
+        .travel-info-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #2d3436;
+        }
+
+        .travel-info-item strong {
+            color: #667eea;
+        }
+
         /* --- Reason Popup Modal --- */
         .modal-overlay {
             position: fixed;
@@ -614,13 +638,13 @@
 
                 let html = '';
                 if (amJobs.length > 0) {
-                    html += '<h2>AM Jobs</h2>' + amJobs.map(createJobCard).join('');
+                    html += '<h2>AM Jobs</h2>' + createJobCardsWithTravel(amJobs);
                 } else {
                     html += '<h2>AM Jobs</h2><div class="no-jobs-section">No AM jobs.</div>';
                 }
 
                 if (pmJobs.length > 0) {
-                    html += '<h2>PM Jobs</h2>' + pmJobs.map(createJobCard).join('');
+                    html += '<h2>PM Jobs</h2>' + createJobCardsWithTravel(pmJobs);
                 } else {
                     html += '<h2>PM Jobs</h2><div class="no-jobs-section">No PM jobs.</div>';
                 }
@@ -631,6 +655,46 @@
             jobsContainer.querySelectorAll('.job-card').forEach(card => {
                 card.addEventListener('click', handleJobCardClick);
             });
+        }
+
+        function createJobCardsWithTravel(jobs) {
+            let html = '';
+            jobs.forEach((job, index) => {
+                html += createJobCard(job);
+                // Add travel info between jobs (except after the last job)
+                if (index < jobs.length - 1) {
+                    html += createTravelInfo(job);
+                }
+            });
+            return html;
+        }
+
+        function createTravelInfo(job) {
+            const distance = job.Distance || job.distance || '';
+            const time = job['Travel Time'] || job['travel time'] || '';
+            
+            if (!distance && !time) {
+                return ''; // Don't show travel info if no data
+            }
+
+            let html = '<div class="travel-info">';
+            
+            if (distance) {
+                html += `<div class="travel-info-item">
+                    <span>🚗</span>
+                    <strong>Distance:</strong> ${distance}
+                </div>`;
+            }
+            
+            if (time) {
+                html += `<div class="travel-info-item">
+                    <span>⏱️</span>
+                    <strong>Travel Time:</strong> ${time}
+                </div>`;
+            }
+            
+            html += '</div>';
+            return html;
         }
 
         function createJobCard(job) {
@@ -897,5 +961,3 @@
     </script>
 </body>
 </html>
-
-
