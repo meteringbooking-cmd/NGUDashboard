@@ -123,6 +123,41 @@
             font-size: 1.5em;
         }
 
+        .header-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .logout-button {
+            padding: 8px 16px;
+            border: 2px solid white;
+            border-radius: 8px;
+            background: transparent;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .logout-button:hover {
+            background: white;
+            color: #667eea;
+        }
+
+        .refresh-indicator {
+            font-size: 12px;
+            opacity: 0.8;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .refresh-indicator.syncing {
+            color: #fdcb6e;
+        }
+
         .jobs-area {
             background: white;
             border-radius: 12px;
@@ -471,7 +506,14 @@
         <div id="dashboardScreen">
             <div class="dashboard-header">
                 <h1 id="engineerNameHeader">Engineer Dashboard</h1>
-                <input type="date" id="dateFilter">
+                <div class="header-controls">
+                    <div class="refresh-indicator" id="refreshIndicator">
+                        <span>🔄</span>
+                        <span id="refreshText">Auto-refresh: 30s</span>
+                    </div>
+                    <input type="date" id="dateFilter">
+                    <button class="logout-button" onclick="logout()">Logout</button>
+                </div>
             </div>
             
             <div class="jobs-area" id="jobsContainer">
@@ -510,14 +552,38 @@
         let authData = [];
         let selectedEngineer = '';
         let currentJobCard = null;
-        let pendingStatusUpdate = null; // Store pending status update details
+        let pendingStatusUpdate = null;
+        let refreshInterval = null;
+        let refreshCountdown = 30; // seconds
+        let countdownInterval = null;
+
+        // Constants for session management
+        const SESSION_KEY = 'engineer_session';
+        const SESSION_DURATION = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
+        const REFRESH_INTERVAL = 30000; // 30 seconds
 
         async function init() {
+            // Check for existing session
+            const session = checkSession();
+            
+            if (session) {
+                // Auto-login with existing session
+                selectedEngineer = session.engineer;
+                await loadAuthData();
+                showDashboard();
+            } else {
+                // Load auth data for login
+                await loadAuthData();
+            }
+
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('dateFilter').value = today;
 
+            setupEventListeners();
+        }
+
+        async function loadAuthData() {
             try {
-                // Fetch the list of users and passwords first
                 const response = await fetch(`${API_URL}?action=getAuthData`);
                 authData = await response.json();
             } catch (error) {
@@ -525,8 +591,6 @@
                 document.getElementById('loginError').textContent = 'Error loading user data.';
                 document.getElementById('loginError').style.visibility = 'visible';
             }
-
-            setupEventListeners();
         }
 
         function setupEventListeners() {
@@ -540,19 +604,58 @@
                 }
             });
 
-            // Close modal when clicking on overlay
             document.getElementById('reasonModal').addEventListener('click', (e) => {
                 if (e.target === document.getElementById('reasonModal')) {
                     closeReasonModal();
                 }
             });
 
-            // Handle Enter key in textarea
             document.getElementById('reasonText').addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && e.ctrlKey) {
                     submitWithReason();
                 }
             });
+        }
+
+        function checkSession() {
+            const sessionData = sessionStorage.getItem(SESSION_KEY);
+            if (!sessionData) return null;
+
+            try {
+                const session = JSON.parse(sessionData);
+                const now = Date.now();
+                
+                // Check if session is still valid (within 12 hours)
+                if (now - session.timestamp < SESSION_DURATION) {
+                    return session;
+                } else {
+                    // Session expired, clear it
+                    sessionStorage.removeItem(SESSION_KEY);
+                    return null;
+                }
+            } catch (error) {
+                console.error('Error parsing session:', error);
+                sessionStorage.removeItem(SESSION_KEY);
+                return null;
+            }
+        }
+
+        function saveSession(engineer) {
+            const session = {
+                engineer: engineer,
+                timestamp: Date.now()
+            };
+            sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+        }
+
+        function logout() {
+            sessionStorage.removeItem(SESSION_KEY);
+            stopAutoRefresh();
+            selectedEngineer = '';
+            document.getElementById('loginScreen').style.display = 'block';
+            document.getElementById('dashboardScreen').style.display = 'none';
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
         }
         
         async function handleLogin(e) {
@@ -565,19 +668,76 @@
             
             if (user) {
                 selectedEngineer = user.Engineer;
+                saveSession(selectedEngineer);
                 errorElement.style.visibility = 'hidden';
-                document.getElementById('loginScreen').style.display = 'none';
-                document.getElementById('dashboardScreen').style.display = 'flex';
-                document.getElementById('engineerNameHeader').textContent = `${selectedEngineer}'s Dashboard`;
-                await loadJobs();
+                showDashboard();
             } else {
                 errorElement.style.visibility = 'visible';
             }
         }
 
+        async function showDashboard() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('dashboardScreen').style.display = 'flex';
+            document.getElementById('engineerNameHeader').textContent = `${selectedEngineer}'s Dashboard`;
+            await loadJobs();
+            startAutoRefresh();
+        }
+
+        function startAutoRefresh() {
+            // Clear any existing intervals
+            stopAutoRefresh();
+            
+            // Start the refresh interval
+            refreshInterval = setInterval(async () => {
+                await refreshJobs();
+            }, REFRESH_INTERVAL);
+
+            // Start the countdown display
+            refreshCountdown = 30;
+            updateRefreshIndicator();
+            countdownInterval = setInterval(() => {
+                refreshCountdown--;
+                if (refreshCountdown <= 0) {
+                    refreshCountdown = 30;
+                }
+                updateRefreshIndicator();
+            }, 1000);
+        }
+
+        function stopAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+            }
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+        }
+
+        function updateRefreshIndicator() {
+            const indicator = document.getElementById('refreshText');
+            indicator.textContent = `Auto-refresh: ${refreshCountdown}s`;
+        }
+
+        async function refreshJobs() {
+            const indicator = document.getElementById('refreshIndicator');
+            indicator.classList.add('syncing');
+            
+            try {
+                await loadJobs();
+            } catch (error) {
+                console.error('Error refreshing jobs:', error);
+            } finally {
+                setTimeout(() => {
+                    indicator.classList.remove('syncing');
+                }, 500);
+            }
+        }
+
         async function loadJobs() {
             try {
-                // Now fetch the actual job data
                 const response = await fetch(`${API_URL}?action=getJobs`);
                 allJobs = await response.json();
                 displayJobsForEngineer();
@@ -595,9 +755,8 @@
             const jobsContainer = document.getElementById('jobsContainer');
             const selectedDate = new Date(document.getElementById('dateFilter').value);
             
-            // Extract day, month, year from the selected date
             const selectedDay = selectedDate.getDate();
-            const selectedMonth = selectedDate.getMonth() + 1; // JavaScript months are 0-indexed
+            const selectedMonth = selectedDate.getMonth() + 1;
             const selectedYear = selectedDate.getFullYear();
 
             console.log('Filtering for:', { selectedDay, selectedMonth, selectedYear });
@@ -608,7 +767,6 @@
                 console.log(`Checking job ${job.Ref}: Engineer="${job.Engineer}" vs "${selectedEngineer}"`);
                 if (job.Engineer !== selectedEngineer) return false;
                 
-                // Parse the separate day, month, year columns
                 const jobDay = parseInt(job.Day);
                 const jobMonth = parseInt(job.Month);
                 const jobYear = parseInt(job.Year);
@@ -626,7 +784,6 @@
                 let amJobs = filteredJobs.filter(job => job.Time && job.Time.toUpperCase().includes('AM'));
                 let pmJobs = filteredJobs.filter(job => job.Time && job.Time.toUpperCase().includes('PM'));
                 
-                // Sort jobs within each section
                 const sortJobsByTime = (a, b) => {
                     const timeA = new Date(`2000/01/01 ${a.Time}`);
                     const timeB = new Date(`2000/01/01 ${b.Time}`);
@@ -661,7 +818,6 @@
             let html = '';
             jobs.forEach((job, index) => {
                 html += createJobCard(job);
-                // Add travel info between jobs (except after the last job)
                 if (index < jobs.length - 1) {
                     html += createTravelInfo(job);
                 }
@@ -673,11 +829,9 @@
             const distance = job.Distance || job.distance || '';
             let time = job['Travel Time'] || job['travel time'] || '';
             
-            // Extract just the time portion if it's in ISO format
             if (time && time.includes('T')) {
                 const timePart = time.split('T')[1];
                 if (timePart) {
-                    // Parse HH:MM:SS.sss and format nicely
                     const timeComponents = timePart.split(':');
                     const hours = parseInt(timeComponents[0]);
                     const minutes = parseInt(timeComponents[1]);
@@ -691,7 +845,7 @@
             }
             
             if (!distance && !time) {
-                return ''; // Don't show travel info if no data
+                return '';
             }
 
             let html = '<div class="travel-info">';
@@ -743,19 +897,11 @@
             const jobRef = jobCard.dataset.ref;
             const customerName = jobCard.querySelector('.job-detail').textContent.split(': ')[1];
             
-            // Fixed WhatsApp number
             const whatsappNumber = '07851158757';
-            
-            // Create a pre-filled message
             const message = `Hi, this is regarding Job #${jobRef}${customerName && customerName !== 'N/A' ? ` for ${customerName}` : ''}. `;
-            
-            // Convert UK number format to international format for WhatsApp
             const internationalNumber = whatsappNumber.replace(/^0/, '+44');
-            
-            // Create WhatsApp URL
             const whatsappUrl = `https://wa.me/${internationalNumber.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
             
-            // Open WhatsApp
             window.open(whatsappUrl, '_blank');
         }
 
@@ -764,8 +910,7 @@
             const customerPhone = jobCard.dataset.phone;
             const jobRef = jobCard.dataset.ref;
             
-            // Use the selectedEngineer (username) not a phone number
-            const engineerName = selectedEngineer; // This should be the engineer's username from login
+            const engineerName = selectedEngineer;
             
             console.log('Engineer name for phone lookup:', engineerName);
             console.log('Customer phone:', customerPhone);
@@ -777,7 +922,6 @@
             
             console.log(`Initiating masked call for Job #${jobRef} from engineer ${engineerName} to customer at ${customerPhone}`);
 
-            // Show calling state
             button.textContent = 'Calling...';
             button.disabled = true;
 
@@ -786,7 +930,7 @@
                     action: "maskedCall",
                     data: {
                         customerPhone: customerPhone,
-                        engineerName: engineerName, // Send engineer name for lookup
+                        engineerName: engineerName,
                         jobRef: jobRef
                     }
                 };
@@ -823,7 +967,6 @@
         }
 
         function handleJobCardClick(e) {
-            // Check if the click was on any action button, if so, do nothing
             if (e.target.classList.contains('action-button') || e.target.closest('.action-buttons')) {
                 return;
             }
@@ -842,13 +985,12 @@
         }
 
         function handleStatusSelection(newStatus) {
-            console.log('Status selected:', newStatus); // Debug log
+            console.log('Status selected:', newStatus);
             const statusMenu = document.getElementById('statusMenu');
             statusMenu.style.display = 'none';
 
-            // Check if the status requires a reason
             if (newStatus === 'Cancelled' || newStatus === 'Aborted') {
-                console.log('Showing reason modal for:', newStatus); // Debug log
+                console.log('Showing reason modal for:', newStatus);
                 showReasonModal(newStatus);
             } else {
                 updateJobStatus(newStatus);
@@ -862,7 +1004,6 @@
             const submitButton = document.getElementById('submitReason');
             const reasonText = document.getElementById('reasonText');
 
-            // Set modal content based on status
             if (status === 'Cancelled') {
                 title.textContent = 'Job Cancelled - Reason Required';
                 description.textContent = 'Please provide a reason for cancelling this job:';
@@ -875,17 +1016,14 @@
                 submitButton.className = 'modal-button submit danger';
             }
 
-            // Store the pending status update
             pendingStatusUpdate = {
                 status: status,
                 jobRef: currentJobCard.dataset.ref
             };
 
-            // Clear previous text and show modal
             reasonText.value = '';
             modal.classList.add('show');
             
-            // Focus on textarea after animation completes
             setTimeout(() => {
                 reasonText.focus();
             }, 300);
@@ -926,7 +1064,7 @@
                     data: {
                         Ref: jobRef,
                         Status: newStatus,
-                        Comments: reason || '' // Send reason to Comments column
+                        Comments: reason || ''
                     }
                 };
 
@@ -952,7 +1090,7 @@
                     if (job) {
                         job.Status = newStatus;
                         if (reason) {
-                            job.Reason = reason; // Store reason in job object if needed
+                            job.Reason = reason;
                         }
                     }
                     
@@ -978,5 +1116,3 @@
     </script>
 </body>
 </html>
-
-
