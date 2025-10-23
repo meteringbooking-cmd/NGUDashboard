@@ -554,13 +554,13 @@
         let currentJobCard = null;
         let pendingStatusUpdate = null;
         let refreshInterval = null;
-        let refreshCountdown = 30; // seconds
+        let refreshCountdown = 10; // seconds
         let countdownInterval = null;
 
         // Constants for session management
         const SESSION_KEY = 'engineer_session';
         const SESSION_DURATION = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
-        const REFRESH_INTERVAL = 30000; // 30 seconds
+        const REFRESH_INTERVAL = 10000; // 10 seconds
 
         async function init() {
             // Check for existing session
@@ -1116,5 +1116,6 @@
     </script>
 </body>
 </html>
+
 
 
