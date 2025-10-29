@@ -868,30 +868,34 @@
             return html;
         }
 
-        function createJobCard(job) {
-            const statusClass = job.Status ? job.Status.toLowerCase().replace(' ', '-') : '';
-            const statusDisplay = job.Status || 'Pending';
-            
-            return `
-                <div class="job-card ${statusClass}" data-ref="${job.Ref}" data-phone="${job['Appointment Contact Number'] || ''}">
-                    <div class="job-header">
-                        <div class="job-ref">Job #${job.Ref}</div>
-                        <div class="job-status ${statusClass}">${statusDisplay}</div>
-                    </div>
-                    <div class="job-details">
-                        <div class="job-detail"><strong>Customer:</strong> ${job['Appointment Contact Name'] || 'N/A'}</div>
-                        <div class="job-detail"><strong>Address:</strong> ${job.Address || 'N/A'}</div>
-                        <div class="job-detail"><strong>Postcode:</strong> ${job['Job Details : Postcode'] || 'N/A'}</div>
-                        <div class="job-detail"><strong>Time:</strong> ${job.Time || 'N/A'}</div>
-                        <div class="action-buttons">
-                            <button class="action-button masked-call-button" onclick="handleMaskedCall(this)">📞 Masked Call</button>
-                            <a class="action-button whatsapp-button" onclick="handleWhatsApp(this)" href="#">💬 WhatsApp</a>
-                        </div>
-                    </div>
+       function createJobCard(job) {
+    const statusClass = job.Status ? job.Status.toLowerCase().replace(' ', '-') : '';
+    const statusDisplay = job.Status || 'Pending';
+    
+    // Extract Site Name from column G (assuming it's mapped as 'Site Name' in the data)
+    const siteName = job['Site Name'] || job.SiteName || 'N/A';
+
+    return `
+        <div class="job-card ${statusClass}" data-ref="${job.Ref}" data-phone="${job['Appointment Contact Number'] || ''}">
+            <div class="job-header">
+                <div class="job-ref">Job #${job.Ref}</div>
+                <div class="job-status ${statusClass}">${statusDisplay}</div>
+            </div>
+            <div class="job-details">
+                <div class="job-detail"><strong>Customer:</strong> ${job['Appointment Contact Name'] || 'N/A'}</div>
+                <div class="job-detail"><strong>Site Name:</strong> ${siteName}</div>
+                <div class="job-detail"><strong>Address:</strong> ${job.Address || 'N/A'}</div>
+                <div class="job-detail"><strong>Postcode:</strong> ${job['Job Details : Postcode'] || 'N/A'}</div>
+                <div class="job-detail"><strong>Time:</strong> ${job.Time || 'N/A'}</div>
+                <div class="action-buttons">
+                    <button class="action-button masked-call-button" onclick="handleMaskedCall(this)">📞 Masked Call</button>
+                    <a class="action-button whatsapp-button" onclick="handleWhatsApp(this)" href="#">💬 WhatsApp</a>
                 </div>
-            `;
-        }
-        
+            </div>
+        </div>
+    `;
+}
+     
         function handleWhatsApp(element) {
             const jobCard = element.closest('.job-card');
             const jobRef = jobCard.dataset.ref;
@@ -1116,6 +1120,7 @@
     </script>
 </body>
 </html>
+
 
 
 
