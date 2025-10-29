@@ -873,7 +873,7 @@
     const statusDisplay = job.Status || 'Pending';
     
     // Extract Site Name from column G (assuming it's mapped as 'Site Name' in the data)
-    const siteName = job['Site Name'] || job.SiteName || 'N/A';
+    const siteName = job['Site'] || job.Site || 'N/A';
 
     return `
         <div class="job-card ${statusClass}" data-ref="${job.Ref}" data-phone="${job['Appointment Contact Number'] || ''}">
@@ -1120,6 +1120,7 @@
     </script>
 </body>
 </html>
+
 
 
 
