@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Engineer Dashboard</title>
+    <title>Tesla Energy Engineer Dashboard</title>
     <style>
         * {
             margin: 0;
@@ -13,8 +14,8 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f5f7fa;
-            color: #333;
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+            color: #f5f5f5;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -29,17 +30,18 @@
 
         /* --- Login Screen --- */
         #loginScreen {
-            background: white;
+            background: #1a1a1a;
             padding: 40px;
             border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 20px rgba(232, 33, 39, 0.3);
+            border: 1px solid #2a2a2a;
             text-align: center;
             width: 100%;
             max-width: 400px;
         }
         
         #loginScreen h1 {
-            color: #667eea;
+            color: #E82127;
             margin-bottom: 20px;
         }
 
@@ -48,8 +50,15 @@
             padding: 12px 15px;
             margin-bottom: 15px;
             border-radius: 8px;
-            border: 1px solid #e0e6ed;
+            border: 1px solid #3a3a3a;
+            background: #2a2a2a;
+            color: #f5f5f5;
             font-size: 16px;
+        }
+
+        .login-form input:focus {
+            outline: none;
+            border-color: #E82127;
         }
         
         #loginScreen button {
@@ -58,18 +67,19 @@
             border: none;
             border-radius: 8px;
             font-size: 16px;
-            background: #667eea;
+            background: #E82127;
             color: white;
             cursor: pointer;
             transition: background 0.3s ease;
+            font-weight: 600;
         }
 
         #loginScreen button:hover {
-            background: #5a66e4;
+            background: #cc1d22;
         }
 
         #loginError {
-            color: #e84393;
+            color: #ff6b6b;
             margin-top: 10px;
             font-size: 0.9em;
             visibility: hidden;
@@ -88,7 +98,7 @@
             max-width: 100%;
             height: auto;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(232, 33, 39, 0.2);
         }
 
         .login-images .screenshot-img {
@@ -109,7 +119,7 @@
         }
 
         .dashboard-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #E82127 0%, #cc1d22 100%);
             color: white;
             padding: 20px;
             border-radius: 12px;
@@ -117,6 +127,7 @@
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
+            box-shadow: 0 4px 15px rgba(232, 33, 39, 0.4);
         }
         
         .dashboard-header h1 {
@@ -143,7 +154,7 @@
 
         .logout-button:hover {
             background: white;
-            color: #667eea;
+            color: #E82127;
         }
 
         .refresh-indicator {
@@ -155,55 +166,56 @@
         }
 
         .refresh-indicator.syncing {
-            color: #fdcb6e;
+            color: #ffd700;
         }
 
         .jobs-area {
-            background: white;
+            background: #1a1a1a;
             border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            border: 1px solid #2a2a2a;
             padding: 20px;
         }
 
         .job-card {
-            background: white;
-            border: 2px solid #e0e6ed;
+            background: #2a2a2a;
+            border: 2px solid #3a3a3a;
             border-radius: 12px;
             padding: 15px;
             margin-bottom: 15px;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
 
         .job-card:hover {
             transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            box-shadow: 0 6px 20px rgba(232, 33, 39, 0.3);
         }
 
         .job-card.on-route {
-            border-color: #fdcb6e;
-            background: linear-gradient(135deg, #fff9e6 0%, #fef5d3 100%);
+            border-color: #ffd700;
+            background: linear-gradient(135deg, #2a2a1a 0%, #3a3a20 100%);
         }
 
         .job-card.in-progress {
-            border-color: #74b9ff;
-            background: linear-gradient(135deg, #e6f3ff 0%, #d1ecff 100%);
+            border-color: #4a90e2;
+            background: linear-gradient(135deg, #1a2a3a 0%, #203a4a 100%);
         }
 
         .job-card.completed {
             border-color: #00b894;
-            background: linear-gradient(135deg, #e6fff9 0%, #d1ffed 100%);
+            background: linear-gradient(135deg, #1a2a24 0%, #203a30 100%);
         }
 
         .job-card.cancelled {
             border-color: #636e72;
-            background: linear-gradient(135deg, #f1f2f6 0%, #e8eaed 100%);
+            background: linear-gradient(135deg, #252525 0%, #303030 100%);
         }
 
         .job-card.aborted {
-            border-color: #e84393;
-            background: linear-gradient(135deg, #ffe6f1 0%, #ffd3e8 100%);
+            border-color: #E82127;
+            background: linear-gradient(135deg, #2a1a1a 0%, #3a2020 100%);
         }
 
         .job-header {
@@ -216,7 +228,7 @@
         .job-ref {
             font-weight: bold;
             font-size: 1.1em;
-            color: #2d3436;
+            color: #f5f5f5;
         }
 
         .job-status {
@@ -227,11 +239,11 @@
             text-transform: uppercase;
         }
 
-        .job-status.on-route { background: #fdcb6e; color: #2d3436; }
-        .job-status.in-progress { background: #74b9ff; color: white; }
+        .job-status.on-route { background: #ffd700; color: #1a1a1a; }
+        .job-status.in-progress { background: #4a90e2; color: white; }
         .job-status.completed { background: #00b894; color: white; }
         .job-status.cancelled { background: #636e72; color: white; }
-        .job-status.aborted { background: #e84393; color: white; }
+        .job-status.aborted { background: #E82127; color: white; }
 
         .job-details {
             margin-bottom: 10px;
@@ -240,10 +252,11 @@
         .job-detail {
             margin-bottom: 5px;
             font-size: 0.9em;
+            color: #d0d0d0;
         }
 
         .job-detail strong {
-            color: #2d3436;
+            color: #f5f5f5;
         }
         
         .action-buttons {
@@ -275,7 +288,7 @@
         }
 
         .masked-call-button:disabled {
-            background: #95a5a6;
+            background: #4a4a4a;
             cursor: not-allowed;
         }
 
@@ -288,7 +301,7 @@
         }
 
         .whatsapp-button:disabled {
-            background: #95a5a6;
+            background: #4a4a4a;
             cursor: not-allowed;
         }
 
@@ -296,8 +309,8 @@
             margin-top: 20px;
             margin-bottom: 10px;
             font-size: 1.3em;
-            color: #667eea;
-            border-bottom: 2px solid #e0e6ed;
+            color: #E82127;
+            border-bottom: 2px solid #3a3a3a;
             padding-bottom: 5px;
         }
         
@@ -307,12 +320,12 @@
 
         .status-menu {
             position: absolute;
-            background: white;
+            background: #2a2a2a;
             border-radius: 8px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
             padding: 10px;
             z-index: 1000;
-            border: 1px solid #e0e6ed;
+            border: 1px solid #3a3a3a;
             display: none;
         }
 
@@ -323,10 +336,12 @@
             margin-bottom: 5px;
             transition: background 0.2s ease;
             font-size: 0.9em;
+            color: #d0d0d0;
         }
 
         .status-option:hover {
-            background: #f8f9ff;
+            background: #3a3a3a;
+            color: #E82127;
         }
 
         .status-option:last-child {
@@ -337,19 +352,19 @@
             text-align: center;
             padding: 40px;
             font-size: 1.1em;
-            color: #636e72;
+            color: #888;
         }
 
         .no-jobs {
             text-align: center;
             padding: 40px;
-            color: #636e72;
+            color: #888;
             font-style: italic;
         }
 
         .no-jobs-section {
             padding: 10px 0;
-            color: #636e72;
+            color: #888;
             font-style: italic;
             text-align: center;
         }
@@ -361,9 +376,9 @@
             gap: 20px;
             padding: 12px 20px;
             margin: 10px 0;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            background: linear-gradient(135deg, #2a2a2a 0%, #3a3a3a 100%);
             border-radius: 8px;
-            border-left: 4px solid #667eea;
+            border-left: 4px solid #E82127;
             font-size: 0.9em;
         }
 
@@ -371,11 +386,11 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            color: #2d3436;
+            color: #d0d0d0;
         }
 
         .travel-info-item strong {
-            color: #667eea;
+            color: #E82127;
         }
 
         /* --- Reason Popup Modal --- */
@@ -385,7 +400,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.8);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -401,12 +416,13 @@
         }
 
         .modal {
-            background: white;
+            background: #1a1a1a;
+            border: 1px solid #3a3a3a;
             border-radius: 12px;
             padding: 30px;
             width: 90%;
             max-width: 500px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 40px rgba(232, 33, 39, 0.4);
             transform: scale(0.8);
             transition: transform 0.3s ease;
         }
@@ -416,13 +432,13 @@
         }
 
         .modal h2 {
-            color: #2d3436;
+            color: #f5f5f5;
             margin-bottom: 15px;
             font-size: 1.4em;
         }
 
         .modal p {
-            color: #636e72;
+            color: #d0d0d0;
             margin-bottom: 20px;
             line-height: 1.5;
         }
@@ -431,7 +447,9 @@
             width: 100%;
             min-height: 100px;
             padding: 12px;
-            border: 2px solid #e0e6ed;
+            border: 2px solid #3a3a3a;
+            background: #2a2a2a;
+            color: #f5f5f5;
             border-radius: 8px;
             font-family: inherit;
             font-size: 14px;
@@ -441,7 +459,7 @@
 
         .modal textarea:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #E82127;
         }
 
         .modal-buttons {
@@ -457,32 +475,33 @@
             font-size: 14px;
             cursor: pointer;
             transition: background 0.3s ease;
+            font-weight: 600;
         }
 
         .modal-button.cancel {
-            background: #ddd;
-            color: #333;
+            background: #3a3a3a;
+            color: #f5f5f5;
         }
 
         .modal-button.cancel:hover {
-            background: #ccc;
+            background: #4a4a4a;
         }
 
         .modal-button.submit {
-            background: #667eea;
+            background: #E82127;
             color: white;
         }
 
         .modal-button.submit:hover {
-            background: #5a66e4;
+            background: #cc1d22;
         }
 
         .modal-button.submit.danger {
-            background: #e84393;
+            background: #E82127;
         }
 
         .modal-button.submit.danger:hover {
-            background: #d63384;
+            background: #b81920;
         }
     </style>
 </head>
@@ -1121,6 +1140,7 @@
     </script>
 </body>
 </html>
+
 
 
 
